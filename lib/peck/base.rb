@@ -193,7 +193,7 @@ class Peck
       end
 
       def describe(*description, &block)
-        init_context(@before, @after, *description, &block)
+        init(@before, @after, *description, &block)
       end
     end
   end
