@@ -5,9 +5,12 @@ Peck.concurrency = 9
 
 describe Peck do
   100.times do
-    it "works with slow specs" do
-      sleep 0.5
+    it "runs concurrently" do
       1.should == 1
+    end
+
+    it "runs concurrently with multiple specs" do
+      2.should == 2
     end
   end
 end

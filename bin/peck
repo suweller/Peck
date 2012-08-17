@@ -2,4 +2,5 @@
 
 $:.unshift File.expand_path('../../lib', __FILE__)
 require 'peck/cli'
-Peck::CLI.run(ARGV)
+
+Peck::CLI.run(__FILE__, ARGV)
