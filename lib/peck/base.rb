@@ -23,6 +23,7 @@ class Peck
   end
 
   class Reporter
+    attr_accessor :ran, :passed, :failed, :errors
     def initialize
       @ran = @passed = @failed = @errors = 0
       @exceptions = []
