@@ -12,4 +12,12 @@ describe Lardon::Specification do
   it "reports on flunks" do
     flunk "Not quite right"
   end
+
+  it "runs failing expectations" do
+    1.should == 2
+  end
+
+  it "runs successful expectations" do
+    2.should == 2
+  end
 end

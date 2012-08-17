@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 require 'set'
+require 'thread'
 
 class Lardon
   VERSION = "1.0"
@@ -18,11 +19,11 @@ class Lardon
   class DelegateSet < Set
     MESSAGES_RE = /^(started|finished|received|at_exit)/
 
-    def method_missing(method, *arguments, &block)
+    def method_missing(method, *args, &block)
       if method.to_s =~ MESSAGES_RE
         each do |delegate|
           if delegate.respond_to?(method)
-            delegate.send(method, *arguments, &block)
+            delegate.send(method, *args, &block)
           end
         end
       end
@@ -130,6 +131,16 @@ class Lardon
   end
 
   class Context
+    attr_reader :specification
+
+    def initialize(specification)
+      @specification = specification
+    end
+
+    def describe(*args, &block)
+      self.class.describe(*args, &block)
+    end
+
     class << self
       FILENAME_WITHOUT_LINE_RE = /^(.+?):\d+/
 
@@ -193,16 +204,6 @@ class Lardon
         init_context(@before, @after, *description, &block)
       end
     end
-
-    attr_reader :specification
-
-    def initialize(specification)
-      @specification = specification
-    end
-
-    def describe(*arguments, &block)
-      self.class.describe(*arguments, &block)
-    end
   end
 
   class Error < RuntimeError
@@ -238,7 +239,11 @@ class Lardon
     def run
       if @block
         @before.each { |cb| @context.instance_eval(&cb) }
-        @context.instance_eval(&@block)
+        Thread.current['peck-semaphore'].synchronize do
+          Thread.current['peck-spec'] = self
+          @context.instance_eval(&@block)
+          Thread.current['peck-spec'] = nil
+        end
         Lardon.delegates.received_missing(self) if empty?
         @after.each { |cb| @context.instance_eval(&cb) }
       else
@@ -315,6 +320,7 @@ class Lardon
     end
 
     def run_serial
+      Thread.current['peck-semaphore'] = Mutex.new
       contexts.each do |context|
         if context.label =~ select_context
           delegates.started_context(context)
