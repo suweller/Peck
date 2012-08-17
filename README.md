@@ -1,3 +1,3 @@
 # Peck
 
-    ruby -I. -r 'lib/peck' -r 'spec/peck_spec' -e "Peck.run_at_exit"
+    ruby -I. -Ilib -r 'examples/concurrent_spec' -e ""
