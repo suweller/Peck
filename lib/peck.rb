@@ -3,7 +3,7 @@
 require 'set'
 require 'thread'
 
-class Lardon
+class Peck
   VERSION = "1.0"
 
   def self.log(message)
@@ -89,7 +89,7 @@ class Lardon
     def write_exceptions
       unless @exceptions.empty?
         @exceptions.each do |specification, exception|
-          backtrace = Lardon.trim_backtrace(exception.backtrace)
+          backtrace = Peck.trim_backtrace(exception.backtrace)
           puts "\nIn [ #{specification.label} ]:"
           puts "#{strip_anonymous_block(backtrace[0])} : #{exception.message}"
           if backtrace.length > 1
@@ -165,7 +165,7 @@ class Lardon
           @timeout = 10 # seconds
         end
 
-        Lardon.contexts << context
+        Peck.contexts << context
         context.class_eval(&block)
         context
       end
@@ -183,7 +183,7 @@ class Lardon
       end
 
       def it(description, &block)
-        return if description !~ Lardon.select_specification
+        return if description !~ Peck.select_specification
         specification = Specification.new(self, @before, @after, description, &block)
 
         unless block_given?
@@ -244,13 +244,13 @@ class Lardon
           @context.instance_eval(&@block)
           Thread.current['peck-spec'] = nil
         end
-        Lardon.delegates.received_missing(self) if empty?
+        Peck.delegates.received_missing(self) if empty?
         @after.each { |cb| @context.instance_eval(&cb) }
       else
-        Lardon.delegates.received_missing(self)
+        Peck.delegates.received_missing(self)
       end
     rescue Object => e
-      Lardon.delegates.received_exception(self, e)
+      Peck.delegates.received_exception(self, e)
       @exception = e
     ensure
       @finished = true
@@ -287,7 +287,7 @@ class Lardon
 
     # This can be used by a `client' to receive status updates.
     #
-    #   Lardon.delegates << Notifier.new
+    #   Peck.delegates << Notifier.new
     attr_reader :delegates
 
     attr_accessor :concurrent
@@ -311,7 +311,7 @@ class Lardon
     def run_at_exit
       unless at_exit_installed
         self.at_exit_installed = true
-        delegates << Lardon::Reporter.new
+        delegates << Peck::Reporter.new
         at_exit do
           run
           delegates.at_exit
@@ -352,6 +352,6 @@ module Kernel
   private
 
   def describe(*description, &block)
-    Lardon::Context.init([], [], *description, &block)
+    Peck::Context.init([], [], *description, &block)
   end
 end

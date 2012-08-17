@@ -1,4 +1,4 @@
-class Lardon
+class Peck
   class Should
     # Kills ==, ===, =~, eql?, equal?, frozen?, instance_of?, is_a?,
     # kind_of?, nil?, respond_to?, tainted?
@@ -31,7 +31,7 @@ class Lardon
 
       result = yield(@this, *args)
       unless @negated ^ result
-        raise Lardon::Error.new(:failed, description)
+        raise Peck::Error.new(:failed, description)
       end
       result
     end
@@ -51,6 +51,6 @@ end
 
 class Object
   def should(*args, &block)
-    Lardon::Should.new(self).be(*args, &block)
+    Peck::Should.new(self).be(*args, &block)
   end
 end

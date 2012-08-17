@@ -1,2 +1,2 @@
-require 'lardon'
-require 'lardon/expectations'
+require 'peck'
+require 'peck/expectations'

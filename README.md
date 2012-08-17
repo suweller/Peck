@@ -1,3 +1,3 @@
 # Peck
 
-    ruby -I. -r 'lib/lardon' -r 'spec/lardon_spec' -e "Lardon.run_at_exit"
+    ruby -I. -r 'lib/peck' -r 'spec/peck_spec' -e "Peck.run_at_exit"

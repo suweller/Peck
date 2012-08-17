@@ -2,7 +2,7 @@
 
 require File.expand_path('../spec_helper', __FILE__)
 
-describe Lardon::Specification do
+describe Peck::Specification do
   it "reports about an implemented spec"
 
   it "reports on method missing exceptions" do
