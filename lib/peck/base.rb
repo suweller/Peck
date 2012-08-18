@@ -158,6 +158,8 @@ class Peck
           @timeout = 10 # seconds
         end
 
+        @setup.each { |b| context.class_eval(&b) } if @setup
+
         Peck.contexts << context
         context.class_eval(&block)
         context
@@ -165,6 +167,15 @@ class Peck
 
       def label
         description.map(&:to_s).join(' ')
+      end
+
+      # Is only ran once for every context when it's initialized. Great place
+      # to hook in test suite specific functionality.
+      #
+      #   Peck::Context.once { |context| context.before { @name = 'Mary' } }
+      def once(&block)
+        @setup ||= []
+        @setup << block
       end
 
       def before(&block)
