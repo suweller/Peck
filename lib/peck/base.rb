@@ -2,10 +2,33 @@ require 'set'
 require 'thread'
 
 class Peck
-  def self.trim_backtrace(backtrace)
-    backtrace.select do |line|
-      !line.start_with?(__FILE__)
-    end
+  # When a file starts with this path, it's in the Peck library
+  PECK_PATH = File.expand_path('..', __FILE__)
+
+  # Matches: `block (2 levels) in <top (required)>'
+  ANONYMOUS_BLOCK_RE = /`block/
+
+  def self.clean_backtrace(backtrace)
+    stripped = backtrace.dup
+    stripped.map! do |line|
+      if line.start_with?(PECK_PATH) || line.start_with?("<")
+        nil
+      elsif line =~ ANONYMOUS_BLOCK_RE
+        line.split(':')[0,2].join(':')
+      else
+        line
+      end
+    end.compact!
+    stripped.empty? ? backtrace : stripped
+  end
+
+  PECK_PART_RE = /Peck/
+  def self.join_description(description)
+    description.map do |part|
+      part = part.to_s
+      part = nil if part =~ PECK_PART_RE
+      part
+    end.compact.join(' ')
   end
 
   class DelegateSet < Set
@@ -82,9 +105,9 @@ class Peck
     def write_exceptions
       unless @exceptions.empty?
         @exceptions.each do |specification, exception|
-          backtrace = Peck.trim_backtrace(exception.backtrace)
+          backtrace = Peck.clean_backtrace(exception.backtrace)
           puts "\nIn [ #{specification.label} ]:"
-          puts "#{strip_anonymous_block(backtrace[0])} : #{exception.message}"
+          puts "#{backtrace[0]} : #{exception.message}"
           if backtrace.length > 1
             puts "#{backtrace[1..-1].join("\n\t")}"
           end
@@ -106,17 +129,6 @@ class Peck
     end
 
     private
-
-    # Matches: `block (2 levels) in <top (required)>'
-    ANONYMOUS_BLOCK_RE = /`block/
-
-    def strip_anonymous_block(line)
-      if line =~ ANONYMOUS_BLOCK_RE
-        line.split(':')[0,2].join(':')
-      else
-        line
-      end
-    end
 
     def pluralize(count, stem)
       count == 1 ? stem : "#{stem}s"
@@ -166,7 +178,7 @@ class Peck
       end
 
       def label
-        description.map(&:to_s).join(' ')
+        Peck.join_description(description)
       end
 
       # Is only ran once for every context when it's initialized. Great place
@@ -178,13 +190,15 @@ class Peck
         @setup << block
       end
 
-      def before(&block)
-        @before << block
+      def before(*args, &block)
+        add_callback(@before, *args, &block)
       end
+      alias setup before
 
-      def after(&block)
-        @after << block
+      def after(*args, &block)
+        add_callback(@after, *args, &block)
       end
+      alias teardown after
 
       def it(description, &block)
         return if description !~ Peck.select_specification
@@ -198,14 +212,19 @@ class Peck
         specification
       end
 
-      def pending(description)
-        spec = Specification.new(self, @before, @after, description, &block)
-        @specifications << spec
-        spec
-      end
-
       def describe(*description, &block)
         init(@before, @after, *description, &block)
+      end
+
+      private
+
+      def add_callback(chain, *args, &block)
+        args.each do |method|
+          chain << Proc.new { send(method) }
+        end
+        if block_given?
+          chain << block
+        end
       end
     end
   end
@@ -333,6 +352,7 @@ class Peck
     end
 
     def run_serial
+      Peck.log("Running specs in serial")
       delegates.started
       Thread.current['peck-semaphore'] = Mutex.new
       contexts.each do |context|
@@ -357,6 +377,8 @@ class Peck
     end
 
     def run_concurrent
+      Peck.log("Running specs concurrently")
+
       delegates.started
 
       current_spec = -1
