@@ -7,6 +7,6 @@ class Peck
   VERSION = "1.0"
 
   def self.log(message)
-    $stderr.puts("{!} #{message}")
+    $stderr.puts("#{Time.now} | #{message}")
   end
 end
