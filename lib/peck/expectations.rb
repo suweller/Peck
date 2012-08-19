@@ -13,6 +13,11 @@ class Peck
       Thread.current['peck-spec'].expectations << self
     end
 
+    def not
+      @negated = !@negated
+      self
+    end
+
     def be(*args, &block)
       if args.empty?
         self
@@ -34,6 +39,27 @@ class Peck
         raise Peck::Error.new(:failed, description)
       end
       result
+    end
+
+    def change(expression, change=nil)
+      if @negated
+        description = "#{expression} changed"
+        description << " by #{actual}" if change
+      else
+        description = "#{expression} didn't change"
+        description << " by #{change}" if change
+      end
+
+      satisfy(description) do |x|
+        difference = change || 1
+        binding = x.send(:binding)
+
+        before = eval(expression, binding)
+        result = @this.call
+        after = eval(expression, binding)
+
+        after == before + difference
+      end
     end
 
     PREDICATE_METHOD_RE = /\w[^?]\z/
