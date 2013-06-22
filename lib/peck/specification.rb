@@ -40,7 +40,7 @@ class Peck
     end
 
     def label
-      "#{@context.class.label} #{@description}"
+      "#{@context.label} #{@description}"
     end
 
     def synchronized(&block)

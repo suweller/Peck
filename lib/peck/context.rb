@@ -12,8 +12,12 @@ class Peck
       self.class.describe(*args, &block)
     end
 
+    def label
+      self.class.label
+    end
+
     def inspect
-      "#<Peck::Context:0x#{object_id.to_s(16)} @description=\"#{self.class.label}\">"
+      "#<Peck::Context:0x#{object_id.to_s(16)} @description=\"#{label}\">"
     end
 
     class << self
